@@ -22,6 +22,7 @@
 #include <covscript/cni.hpp>
 #include <covscript/extension.hpp>
 #include <covscript/extensions/char.hpp>
+#include <covscript/extensions/array.hpp>
 #include <covscript/extensions/string.hpp>
 
 static cs::extension regex_ext;
@@ -123,6 +124,7 @@ namespace regex_cs_ext {
 	void init()
 	{
 		char_cs_ext::init();
+		array_cs_ext::init();
 		string_cs_ext::init();
 		regex_ext.add_var("result", var::make_protect<extension_t>(regex_result_ext_shared));
 		regex_ext.add_var("build", var::make_protect<callable>(cni(build)));
