@@ -21,7 +21,7 @@ function set_flag() {
     fi
 }
 
-DEFAULT_CXXFLAGS="-std=c++11 -I ../include -shared -fPIC -s -O3 -ldl"
+DEFAULT_CXXFLAGS="-std=c++11 -I ../include -shared -fPIC -s -O3"
 DEFAULT_LDFLAGS=""
 DEFAULT_CXX=g++
 
