@@ -23,8 +23,8 @@
 
 static cs::extension regex_ext;
 static cs::extension regex_result_ext;
-static cs::extension_t regex_ext_shared = cs::make_shared_extension(regex_ext);
-static cs::extension_t regex_result_ext_shared = cs::make_shared_extension(regex_result_ext);
+static cs::extension_t regex_ext_shared = cs::make_shared_namespace(regex_ext);
+static cs::extension_t regex_result_ext_shared = cs::make_shared_namespace(regex_result_ext);
 namespace cs_impl {
 	template<>
 	cs::extension_t &get_ext<std::regex>()
