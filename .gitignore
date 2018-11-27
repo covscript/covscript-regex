@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Build Files
+build/
+
+# CovScript Headers
+include/covscript

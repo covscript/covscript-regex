@@ -18,24 +18,22 @@
 * Github: https://github.com/mikecovlee
 */
 #include <regex>
-#include <covscript/cni.hpp>
 #include <covscript/extension.hpp>
 
-static cs::extension regex_ext;
-static cs::extension regex_result_ext;
-static cs::extension_t regex_ext_shared = cs::make_shared_namespace(regex_ext);
-static cs::extension_t regex_result_ext_shared = cs::make_shared_namespace(regex_result_ext);
+static cs::namespace_t regex_ext=cs::make_shared_namespace<cs::name_space>();
+static cs::namespace_t regex_result_ext=cs::make_shared_namespace<cs::name_space>();
+
 namespace cs_impl {
 	template<>
-	cs::extension_t &get_ext<std::regex>()
+	cs::namespace_t &get_ext<std::regex>()
 	{
-		return regex_ext_shared;
+		return regex_ext;
 	}
 
 	template<>
-	cs::extension_t &get_ext<std::smatch>()
+	cs::namespace_t &get_ext<std::smatch>()
 	{
-		return regex_result_ext_shared;
+		return regex_result_ext;
 	}
 
 	template<>
@@ -117,26 +115,31 @@ namespace regex_cs_ext {
 		return m.suffix().str();
 	}
 
-	void init()
+	void init(name_space* ns)
 	{
-		regex_ext.add_var("result", var::make_protect<extension_t>(regex_result_ext_shared));
-		regex_ext.add_var("build", var::make_protect<callable>(cni(build)));
-		regex_ext.add_var("match", var::make_protect<callable>(cni(match)));
-		regex_ext.add_var("search", var::make_protect<callable>(cni(search)));
-		regex_ext.add_var("replace", var::make_protect<callable>(cni(replace)));
-		regex_result_ext.add_var("ready", var::make_protect<callable>(cni(ready)));
-		regex_result_ext.add_var("empty", var::make_protect<callable>(cni(empty)));
-		regex_result_ext.add_var("size", var::make_protect<callable>(cni(size)));
-		regex_result_ext.add_var("length", var::make_protect<callable>(cni(length)));
-		regex_result_ext.add_var("position", var::make_protect<callable>(cni(position)));
-		regex_result_ext.add_var("str", var::make_protect<callable>(cni(str)));
-		regex_result_ext.add_var("prefix", var::make_protect<callable>(cni(prefix)));
-		regex_result_ext.add_var("suffix", var::make_protect<callable>(cni(suffix)));
+		(*ns)
+		.add_var("result", make_namespace(regex_result_ext))
+		.add_var("build", make_cni(build))
+		.add_var("match", make_cni(match))
+		.add_var("search", make_cni(search))
+		.add_var("replace", make_cni(replace));
+		(*regex_ext)
+		.add_var("match", make_cni(match))
+		.add_var("search", make_cni(search))
+		.add_var("replace", make_cni(replace));
+		(*regex_result_ext)
+		.add_var("ready", make_cni(ready))
+		.add_var("empty", make_cni(empty))
+		.add_var("size", make_cni(size))
+		.add_var("length", make_cni(length))
+		.add_var("position", make_cni(position))
+		.add_var("str", make_cni(str))
+		.add_var("prefix", make_cni(prefix))
+		.add_var("suffix", make_cni(suffix));
 	}
 }
 
-cs::extension *cs_extension()
+void cs_extension_main(cs::name_space* ns)
 {
-	regex_cs_ext::init();
-	return &regex_ext;
+	regex_cs_ext::init(ns);
 }
