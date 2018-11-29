@@ -18,7 +18,7 @@
 * Github: https://github.com/mikecovlee
 */
 #include <regex>
-#include <covscript/extension.hpp>
+#include <covscript/dll.hpp>
 
 static cs::namespace_t regex_ext=cs::make_shared_namespace<cs::name_space>();
 static cs::namespace_t regex_result_ext=cs::make_shared_namespace<cs::name_space>();
