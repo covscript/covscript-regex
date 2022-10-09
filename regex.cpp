@@ -21,6 +21,7 @@
 */
 #include <regex>
 #include <covscript/dll.hpp>
+#include <covscript/cni.hpp>
 
 static cs::namespace_t regex_ext=cs::make_shared_namespace<cs::name_space>();
 static cs::namespace_t regex_result_ext=cs::make_shared_namespace<cs::name_space>();
