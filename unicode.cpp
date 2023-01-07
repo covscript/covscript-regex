@@ -26,8 +26,8 @@
 #include <cwctype>
 #include <regex>
 
-using uwstring_t = std::u32string;
-using uwchar_t = char32_t;
+using uwstring_t = std::wstring;
+using uwchar_t = wchar_t;
 
 namespace codecvt_impl {
 	using namespace cs;
@@ -158,8 +158,8 @@ namespace codecvt_impl {
 }
 
 using codecvt_t = std::shared_ptr<codecvt_impl::charset>;
-using wregex_t = std::basic_regex<uwchar_t>;
-using wsmatch_t = std::match_results<uwstring_t::const_iterator>;
+using wregex_t = std::wregex;
+using wsmatch_t = std::wsmatch;
 
 CNI_ROOT_NAMESPACE {
 	using namespace cs;
