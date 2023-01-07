@@ -26,6 +26,9 @@
 #include <cwctype>
 #include <regex>
 
+using uwstring_t = std::u32string;
+using uwchar_t = char32_t;
+
 namespace codecvt_impl {
 	using namespace cs;
 
@@ -33,21 +36,21 @@ namespace codecvt_impl {
 	public:
 		virtual ~charset() = default;
 
-		virtual std::u32string local2wide(const std::string &) = 0;
+		virtual uwstring_t local2wide(const std::string &) = 0;
 
-		virtual std::string wide2local(const std::u32string &) = 0;
+		virtual std::string wide2local(const uwstring_t &) = 0;
 
-		virtual bool is_identifier(char32_t) = 0;
+		virtual bool is_identifier(uwchar_t) = 0;
 	};
 
 	class ascii final : public charset {
 	public:
-		std::u32string local2wide(const std::string &local) override
+		uwstring_t local2wide(const std::string &local) override
 		{
-			return std::u32string(local.begin(), local.end());
+			return uwstring_t(local.begin(), local.end());
 		}
 
-		std::string wide2local(const std::u32string &str) override
+		std::string wide2local(const uwstring_t &str) override
 		{
 			std::string local;
 			local.reserve(str.size());
@@ -56,28 +59,28 @@ namespace codecvt_impl {
 			return std::move(local);
 		}
 
-		bool is_identifier(char32_t ch) override
+		bool is_identifier(uwchar_t ch) override
 		{
 			return ch == '_' || std::iswalnum(ch);
 		}
 	};
 
 	class utf8 final : public charset {
-		std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
+		std::wstring_convert<std::codecvt_utf8<uwchar_t>, uwchar_t> cvt;
 
 		static constexpr std::uint32_t ascii_max = 0x7F;
 	public:
-		std::u32string local2wide(const std::string &str) override
+		uwstring_t local2wide(const std::string &str) override
 		{
 			return cvt.from_bytes(str);
 		}
 
-		std::string wide2local(const std::u32string &str) override
+		std::string wide2local(const uwstring_t &str) override
 		{
 			return cvt.to_bytes(str);
 		}
 
-		bool is_identifier(char32_t ch) override
+		bool is_identifier(uwchar_t ch) override
 		{
 			/**
 			 * Chinese Character in Unicode Charset
@@ -93,7 +96,7 @@ namespace codecvt_impl {
 	};
 
 	class gbk final : public charset {
-		static inline char32_t set_zero(char32_t ch)
+		static inline uwchar_t set_zero(uwchar_t ch)
 		{
 			return ch & 0x0000ffff;
 		}
@@ -101,9 +104,9 @@ namespace codecvt_impl {
 		static constexpr std::uint8_t u8_blck_begin = 0x80;
 		static constexpr std::uint32_t u32_blck_begin = 0x8000;
 	public:
-		std::u32string local2wide(const std::string &local) override
+		uwstring_t local2wide(const std::string &local) override
 		{
-			std::u32string wide;
+			uwstring_t wide;
 			uint32_t head = 0;
 			bool read_next = true;
 			for (auto it = local.begin(); it != local.end();) {
@@ -125,7 +128,7 @@ namespace codecvt_impl {
 			return std::move(wide);
 		}
 
-		std::string wide2local(const std::u32string &wide) override
+		std::string wide2local(const uwstring_t &wide) override
 		{
 			std::string local;
 			for (auto &ch:wide) {
@@ -136,7 +139,7 @@ namespace codecvt_impl {
 			return std::move(local);
 		}
 
-		bool is_identifier(char32_t ch) override
+		bool is_identifier(uwchar_t ch) override
 		{
 			/**
 			 * Chinese Character in GBK Charset
@@ -154,9 +157,9 @@ namespace codecvt_impl {
 	};
 }
 
-using codecvt_type = std::shared_ptr<codecvt_impl::charset>;
-using wregex_type = std::basic_regex<char32_t>;
-using wsmatch_type = std::match_results<std::u32string::const_iterator>;
+using codecvt_t = std::shared_ptr<codecvt_impl::charset>;
+using wregex_t = std::basic_regex<uwchar_t>;
+using wsmatch_t = std::match_results<uwstring_t::const_iterator>;
 
 CNI_ROOT_NAMESPACE {
 	using namespace cs;
@@ -164,36 +167,36 @@ CNI_ROOT_NAMESPACE {
 	CNI_NAMESPACE(codecvt)
 	{
 		cs::var make_codecvt_ascii() {
-			return codecvt_type(new codecvt_impl::ascii);
+			return codecvt_t(new codecvt_impl::ascii);
 		}
 
-		CNI_REGISTER(ascii, cs::var::make_constant<cs::type_t>(make_codecvt_ascii, cs::type_id(typeid(codecvt_type))))
+		CNI_REGISTER(ascii, cs::var::make_constant<cs::type_t>(make_codecvt_ascii, cs::type_id(typeid(codecvt_t))))
 
 		cs::var make_codecvt_utf8() {
-			return codecvt_type(new codecvt_impl::utf8);
+			return codecvt_t(new codecvt_impl::utf8);
 		}
 
-		CNI_REGISTER(utf8, cs::var::make_constant<cs::type_t>(make_codecvt_utf8, cs::type_id(typeid(codecvt_type))))
+		CNI_REGISTER(utf8, cs::var::make_constant<cs::type_t>(make_codecvt_utf8, cs::type_id(typeid(codecvt_t))))
 
 		cs::var make_codecvt_gbk() {
-			return codecvt_type(new codecvt_impl::gbk);
+			return codecvt_t(new codecvt_impl::gbk);
 		}
 
-		CNI_REGISTER(gbk, cs::var::make_constant<cs::type_t>(make_codecvt_gbk, cs::type_id(typeid(codecvt_type))))
+		CNI_REGISTER(gbk, cs::var::make_constant<cs::type_t>(make_codecvt_gbk, cs::type_id(typeid(codecvt_t))))
 
-		std::u32string local2wide(const codecvt_type& cvt, const std::string& str) {
+		uwstring_t local2wide(const codecvt_t& cvt, const std::string& str) {
 			return cvt->local2wide(str);
 		}
 
 		CNI(local2wide)
 
-		std::string wide2local(const codecvt_type& cvt, const std::u32string& str) {
+		std::string wide2local(const codecvt_t& cvt, const uwstring_t& str) {
 			return cvt->wide2local(str);
 		}
 
 		CNI(wide2local)
 
-		bool is_identifier(const codecvt_type& cvt, char32_t ch) {
+		bool is_identifier(const codecvt_t& cvt, uwchar_t ch) {
 			return cvt->is_identifier(ch);
 		}
 
@@ -202,94 +205,94 @@ CNI_ROOT_NAMESPACE {
 
 	CNI_NAMESPACE(wchar)
 	{
-		bool isalnum(char32_t c) {
+		bool isalnum(uwchar_t c) {
 			return std::iswalnum(c);
 		}
 
 		CNI(isalnum)
 
-		bool isalpha(char32_t c) {
+		bool isalpha(uwchar_t c) {
 			return std::iswalpha(c);
 		}
 
 		CNI(isalpha)
 
-		bool islower(char32_t c) {
+		bool islower(uwchar_t c) {
 			return std::iswlower(c);
 		}
 
 		CNI(islower)
 
-		bool isupper(char32_t c) {
+		bool isupper(uwchar_t c) {
 			return std::iswupper(c);
 		}
 
 		CNI(isupper)
 
-		bool isdigit(char32_t c) {
+		bool isdigit(uwchar_t c) {
 			return std::iswdigit(c);
 		}
 
 		CNI(isdigit)
 
-		bool iscntrl(char32_t c) {
+		bool iscntrl(uwchar_t c) {
 			return std::iswcntrl(c);
 		}
 
 		CNI(iscntrl)
 
-		bool isgraph(char32_t c) {
+		bool isgraph(uwchar_t c) {
 			return std::iswgraph(c);
 		}
 
 		CNI(isgraph)
 
-		bool isspace(char32_t c) {
+		bool isspace(uwchar_t c) {
 			return std::iswspace(c);
 		}
 
 		CNI(isspace)
 
-		bool isblank(char32_t c) {
+		bool isblank(uwchar_t c) {
 			return std::iswblank(c);
 		}
 
 		CNI(isblank)
 
-		bool isprint(char32_t c) {
+		bool isprint(uwchar_t c) {
 			return std::iswprint(c);
 		}
 
 		CNI(isprint)
 
-		bool ispunct(char32_t c) {
+		bool ispunct(uwchar_t c) {
 			return std::iswpunct(c);
 		}
 
 		CNI(ispunct)
 
-		char32_t tolower(char32_t c) {
+		uwchar_t tolower(uwchar_t c) {
 			return std::towlower(c);
 		}
 
 		CNI(tolower)
 
-		char32_t toupper(char32_t c) {
+		uwchar_t toupper(uwchar_t c) {
 			return std::towupper(c);
 		}
 
 		CNI(toupper)
 
-		char32_t from_unicode(const numeric& unicode) {
+		uwchar_t from_unicode(const numeric& unicode) {
 			if (unicode.as_integer() < 0)
 				throw lang_error("Out of range.");
-			return static_cast<char32_t>(unicode.as_integer());
+			return static_cast<uwchar_t>(unicode.as_integer());
 		}
 
 		CNI(from_unicode)
 
-		std::u32string to_wstring(char32_t c) {
-			return std::u32string(1, c);
+		uwstring_t to_wstring(uwchar_t c) {
+			return uwstring_t(1, c);
 		}
 
 		CNI(to_wstring)
@@ -297,56 +300,56 @@ CNI_ROOT_NAMESPACE {
 
 	CNI_NAMESPACE(wstring_type)
 	{
-		char32_t at(const std::u32string &str, numeric idx) {
+		uwchar_t at(const uwstring_t &str, numeric idx) {
 			return str.at(idx.as_integer());
 		}
 
 		CNI(at)
 
-		std::u32string assign(std::u32string &str, numeric posit, char ch) {
+		uwstring_t assign(uwstring_t &str, numeric posit, char ch) {
 			str.at(posit.as_integer()) = ch;
 			return str;
 		}
 
 		CNI(assign)
 
-		std::u32string append(std::u32string &str, const std::u32string &val) {
+		uwstring_t append(uwstring_t &str, const uwstring_t &val) {
 			str.append(val);
 			return str;
 		}
 
 		CNI(append)
 
-		std::u32string insert(std::u32string &str, numeric posit, const std::u32string &val) {
+		uwstring_t insert(uwstring_t &str, numeric posit, const uwstring_t &val) {
 			str.insert(posit.as_integer(), val);
 			return str;
 		}
 
 		CNI(insert)
 
-		std::u32string erase(std::u32string &str, numeric b, numeric e) {
+		uwstring_t erase(uwstring_t &str, numeric b, numeric e) {
 			str.erase(b.as_integer(), e.as_integer());
 			return str;
 		}
 
 		CNI(erase)
 
-		std::u32string replace(std::u32string &str, numeric posit, numeric count, const std::u32string &val) {
+		uwstring_t replace(uwstring_t &str, numeric posit, numeric count, const uwstring_t &val) {
 			str.replace(posit.as_integer(), count.as_integer(), val);
 			return str;
 		}
 
 		CNI(replace)
 
-		std::u32string substr(const std::u32string &str, numeric b, numeric e) {
+		uwstring_t substr(const uwstring_t &str, numeric b, numeric e) {
 			return str.substr(b.as_integer(), e.as_integer());
 		}
 
 		CNI(substr)
 
-		numeric find(const std::u32string &str, const std::u32string &s, numeric posit) {
+		numeric find(const uwstring_t &str, const uwstring_t &s, numeric posit) {
 			auto pos = str.find(s, posit.as_integer());
-			if (pos == std::u32string::npos)
+			if (pos == uwstring_t::npos)
 				return -1;
 			else
 				return pos;
@@ -354,13 +357,13 @@ CNI_ROOT_NAMESPACE {
 
 		CNI(find)
 
-		numeric rfind(const std::u32string &str, const std::u32string &s, numeric posit) {
+		numeric rfind(const uwstring_t &str, const uwstring_t &s, numeric posit) {
 			std::size_t pos = 0;
 			if (posit.as_integer() == -1)
-				pos = str.rfind(s, std::u32string::npos);
+				pos = str.rfind(s, uwstring_t::npos);
 			else
 				pos = str.rfind(s, posit.as_integer());
-			if (pos == std::u32string::npos)
+			if (pos == uwstring_t::npos)
 				return -1;
 			else
 				return pos;
@@ -368,7 +371,7 @@ CNI_ROOT_NAMESPACE {
 
 		CNI(rfind)
 
-		std::u32string cut(std::u32string &str, numeric n) {
+		uwstring_t cut(uwstring_t &str, numeric n) {
 			for (std::size_t i = 0; i < n.as_integer(); ++i)
 				str.pop_back();
 			return str;
@@ -376,26 +379,26 @@ CNI_ROOT_NAMESPACE {
 
 		CNI(cut)
 
-		bool empty(const std::u32string &str) {
+		bool empty(const uwstring_t &str) {
 			return str.empty();
 		}
 
 		CNI(empty)
 
-		void clear(std::u32string &str) {
+		void clear(uwstring_t &str) {
 			str.clear();
 		}
 
 		CNI(clear)
 
-		numeric size(const std::u32string &str) {
+		numeric size(const uwstring_t &str) {
 			return str.size();
 		}
 
 		CNI(size)
 
-		std::u32string tolower(const std::u32string &str) {
-			std::u32string s;
+		uwstring_t tolower(const uwstring_t &str) {
+			uwstring_t s;
 			for (auto &ch:str)
 				s.push_back(std::towlower(ch));
 			return std::move(s);
@@ -403,8 +406,8 @@ CNI_ROOT_NAMESPACE {
 
 		CNI(tolower)
 
-		std::u32string toupper(const std::u32string &str) {
-			std::u32string s;
+		uwstring_t toupper(const uwstring_t &str) {
+			uwstring_t s;
 			for (auto &ch:str)
 				s.push_back(std::towupper(ch));
 			return std::move(s);
@@ -412,16 +415,16 @@ CNI_ROOT_NAMESPACE {
 
 		CNI(toupper)
 
-		numeric to_number(const std::u32string &str, const codecvt_type &cvt) {
+		numeric to_number(const uwstring_t &str, const codecvt_t &cvt) {
 			return parse_number(cvt->wide2local(str));
 		}
 
 		CNI(to_number)
 
-		array split(const std::u32string &str, const array &signals) {
+		array split(const uwstring_t &str, const array &signals) {
 			array
 			arr;
-			std::u32string buf;
+			uwstring_t buf;
 			bool found = false;
 			for (auto &ch:str) {
 				for (auto &sig:signals) {
@@ -433,7 +436,7 @@ CNI_ROOT_NAMESPACE {
 						found = true;
 						break;
 					}
-					else if (sig.type() == typeid(char32_t) && ch == sig.const_val<char32_t>()) {
+					else if (sig.type() == typeid(uwchar_t) && ch == sig.const_val<uwchar_t>()) {
 						if (!buf.empty()) {
 							arr.push_back(buf);
 							buf.clear();
@@ -457,75 +460,75 @@ CNI_ROOT_NAMESPACE {
 
 	CNI_NAMESPACE(wregex)
 	{
-		wsmatch_type match(wregex_type &reg, const std::u32string &str) {
-			wsmatch_type m;
+		wsmatch_t match(wregex_t &reg, const uwstring_t &str) {
+			wsmatch_t m;
 			std::regex_search(str, m, reg);
 			return std::move(m);
 		}
 
-		wsmatch_type search(wregex_type &reg, const std::u32string &str) {
-			wsmatch_type m;
+		wsmatch_t search(wregex_t &reg, const uwstring_t &str) {
+			wsmatch_t m;
 			std::regex_search(str, m, reg);
 			return std::move(m);
 		}
 
-		std::u32string replace(wregex_type &reg, const std::u32string &str, const std::u32string &fmt) {
+		uwstring_t replace(wregex_t &reg, const uwstring_t &str, const uwstring_t &fmt) {
 			return std::regex_replace(str, reg, fmt);
 		}
 	}
 
 	CNI_NAMESPACE(wsmatch)
 	{
-		bool ready(const wsmatch_type &m) {
+		bool ready(const wsmatch_t &m) {
 			return m.ready();
 		}
 
-		bool empty(const wsmatch_type &m) {
+		bool empty(const wsmatch_t &m) {
 			return m.empty();
 		}
 
-		numeric size(const wsmatch_type &m) {
+		numeric size(const wsmatch_t &m) {
 			return m.size();
 		}
 
-		numeric length(const wsmatch_type &m, numeric index) {
+		numeric length(const wsmatch_t &m, numeric index) {
 			return m.length(index.as_integer());
 		}
 
-		numeric position(const wsmatch_type &m, numeric index) {
+		numeric position(const wsmatch_t &m, numeric index) {
 			return m.position(index.as_integer());
 		}
 
-		std::u32string str(const wsmatch_type &m, numeric index) {
+		uwstring_t str(const wsmatch_t &m, numeric index) {
 			return m.str(index.as_integer());
 		}
 
-		std::u32string prefix(const wsmatch_type &m) {
+		uwstring_t prefix(const wsmatch_t &m) {
 			return m.prefix().str();
 		}
 
-		std::u32string suffix(const wsmatch_type &m) {
+		uwstring_t suffix(const wsmatch_t &m) {
 			return m.suffix().str();
 		}
 	}
 
 	cs::var make_wstring()
 	{
-		return cs::var::make<std::u32string>();
+		return cs::var::make<uwstring_t>();
 	}
 
-	CNI_REGISTER(wstring, cs::var::make_constant<cs::type_t>(make_wstring, cs::type_id(typeid(std::u32string))))
+	CNI_REGISTER(wstring, cs::var::make_constant<cs::type_t>(make_wstring, cs::type_id(typeid(uwstring_t))))
 
-	var build_wregex(const std::u32string &str)
+	var build_wregex(const uwstring_t &str)
 	{
-		return var::make<wregex_type>(str);
+		return var::make<wregex_t>(str);
 	}
 
 	CNI(build_wregex)
 }
 
-CNI_ENABLE_TYPE_EXT_V(codecvt,      codecvt_type,   "unicode::codecvt")
-CNI_ENABLE_TYPE_EXT_V(wchar,        char32_t,       "unicode::wchar")
-CNI_ENABLE_TYPE_EXT_V(wstring_type, std::u32string, "unicode::wstring")
-CNI_ENABLE_TYPE_EXT_V(wregex,       wregex_type,    "unicode::wregex")
-CNI_ENABLE_TYPE_EXT_V(wsmatch,      wsmatch_type,   "unicode::wregex::result")
+CNI_ENABLE_TYPE_EXT_V(codecvt,      codecvt_t,  "unicode::codecvt")
+CNI_ENABLE_TYPE_EXT_V(wchar,        uwchar_t,   "unicode::wchar")
+CNI_ENABLE_TYPE_EXT_V(wstring_type, uwstring_t, "unicode::wstring")
+CNI_ENABLE_TYPE_EXT_V(wregex,       wregex_t,   "unicode::wregex")
+CNI_ENABLE_TYPE_EXT_V(wsmatch,      wsmatch_t,  "unicode::wregex::result")
