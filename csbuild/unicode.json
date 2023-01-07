@@ -1,0 +1,9 @@
+{
+    "Type": "Extension",
+    "Name": "unicode",
+    "Info": "Unicode Extension",
+    "Author": "CovScript Organization",
+    "Version": "1.0.1",
+    "Target": "build/imports/unicode.cse",
+    "Dependencies": []
+}

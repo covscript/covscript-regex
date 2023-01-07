@@ -32,9 +32,15 @@ else ()
 endif ()
 
 add_library(regex SHARED regex.cpp)
+add_library(unicode SHARED unicode.cpp)
 
 target_link_libraries(regex covscript)
+target_link_libraries(unicode covscript)
 
 set_target_properties(regex PROPERTIES OUTPUT_NAME regex)
 set_target_properties(regex PROPERTIES PREFIX "")
 set_target_properties(regex PROPERTIES SUFFIX ".cse")
+
+set_target_properties(unicode PROPERTIES OUTPUT_NAME unicode)
+set_target_properties(unicode PROPERTIES PREFIX "")
+set_target_properties(unicode PROPERTIES SUFFIX ".cse")
