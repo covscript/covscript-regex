@@ -1,28 +1,28 @@
 /*
-* Covariant Script Unicode Extension
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-* Copyright (C) 2017-2023 Michael Lee(李登淳)
-*
-* Email:   lee@covariant.cn, mikecovlee@163.com
-* Github:  https://github.com/mikecovlee
-* Website: http://covscript.org.cn
-*/
+ * Covariant Script Unicode Extension
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright (C) 2017-2023 Michael Lee(李登淳)
+ *
+ * Email:   lee@covariant.cn, mikecovlee@163.com
+ * Github:  https://github.com/mikecovlee
+ * Website: http://covscript.org.cn
+ */
 
-#include <covscript/dll.hpp>
-#include <covscript/cni.hpp>
 #include <codecvt>
+#include <covscript/cni.hpp>
+#include <covscript/dll.hpp>
 #include <cwctype>
 #include <regex>
 
@@ -54,8 +54,7 @@ namespace codecvt_impl {
 		{
 			std::string local;
 			local.reserve(str.size());
-			for (auto ch:str)
-				local.push_back(ch);
+			for (auto ch : str) local.push_back(ch);
 			return std::move(local);
 		}
 
@@ -69,6 +68,7 @@ namespace codecvt_impl {
 		std::wstring_convert<std::codecvt_utf8<uwchar_t>, uwchar_t> cvt;
 
 		static constexpr std::uint32_t ascii_max = 0x7F;
+
 	public:
 		uwstring_t local2wide(const std::string &str) override
 		{
@@ -89,7 +89,8 @@ namespace codecvt_impl {
 			 * Special:  0x3007
 			 */
 			if (ch > ascii_max)
-				return (ch >= 0x4E00 && ch <= 0x9FA5) || (ch >= 0x9FA6 && ch <= 0x9FEF) || ch == 0x3007;
+				return (ch >= 0x4E00 && ch <= 0x9FA5) || (ch >= 0x9FA6 && ch <= 0x9FEF) ||
+				       ch == 0x3007;
 			else
 				return ch == '_' || std::iswalnum(ch);
 		}
@@ -103,6 +104,7 @@ namespace codecvt_impl {
 
 		static constexpr std::uint8_t u8_blck_begin = 0x80;
 		static constexpr std::uint32_t u32_blck_begin = 0x8000;
+
 	public:
 		uwstring_t local2wide(const std::string &local) override
 		{
@@ -123,17 +125,15 @@ namespace codecvt_impl {
 					read_next = true;
 				}
 			}
-			if (!read_next)
-				throw compile_error("Codecvt: Bad encoding.");
+			if (!read_next) throw compile_error("Codecvt: Bad encoding.");
 			return std::move(wide);
 		}
 
 		std::string wide2local(const uwstring_t &wide) override
 		{
 			std::string local;
-			for (auto &ch:wide) {
-				if (ch & u32_blck_begin)
-					local.push_back(ch >> 8);
+			for (auto &ch : wide) {
+				if (ch & u32_blck_begin) local.push_back(ch >> 8);
 				local.push_back(ch);
 			}
 			return std::move(local);
@@ -155,7 +155,7 @@ namespace codecvt_impl {
 				return ch == '_' || std::iswalnum(ch);
 		}
 	};
-}
+}  // namespace codecvt_impl
 
 using codecvt_t = std::shared_ptr<codecvt_impl::charset>;
 using wregex_t = std::wregex;
@@ -170,33 +170,39 @@ CNI_ROOT_NAMESPACE {
 			return codecvt_t(new codecvt_impl::ascii);
 		}
 
-		CNI_REGISTER(ascii, cs::var::make_constant<cs::type_t>(make_codecvt_ascii, cs::type_id(typeid(codecvt_t))))
+		CNI_REGISTER(ascii,
+		             cs::var::make_constant<cs::type_t>(make_codecvt_ascii,
+		                     cs::type_id(typeid(codecvt_t))))
 
 		cs::var make_codecvt_utf8() {
 			return codecvt_t(new codecvt_impl::utf8);
 		}
 
-		CNI_REGISTER(utf8, cs::var::make_constant<cs::type_t>(make_codecvt_utf8, cs::type_id(typeid(codecvt_t))))
+		CNI_REGISTER(utf8,
+		             cs::var::make_constant<cs::type_t>(make_codecvt_utf8,
+		                     cs::type_id(typeid(codecvt_t))))
 
 		cs::var make_codecvt_gbk() {
 			return codecvt_t(new codecvt_impl::gbk);
 		}
 
-		CNI_REGISTER(gbk, cs::var::make_constant<cs::type_t>(make_codecvt_gbk, cs::type_id(typeid(codecvt_t))))
+		CNI_REGISTER(gbk,
+		             cs::var::make_constant<cs::type_t>(make_codecvt_gbk,
+		                     cs::type_id(typeid(codecvt_t))))
 
-		uwstring_t local2wide(const codecvt_t& cvt, const std::string& str) {
+		uwstring_t local2wide(const codecvt_t &cvt, const std::string &str) {
 			return cvt->local2wide(str);
 		}
 
 		CNI(local2wide)
 
-		std::string wide2local(const codecvt_t& cvt, const uwstring_t& str) {
+		std::string wide2local(const codecvt_t &cvt, const uwstring_t &str) {
 			return cvt->wide2local(str);
 		}
 
 		CNI(wide2local)
 
-		bool is_identifier(const codecvt_t& cvt, uwchar_t ch) {
+		bool is_identifier(const codecvt_t &cvt, uwchar_t ch) {
 			return cvt->is_identifier(ch);
 		}
 
@@ -283,9 +289,14 @@ CNI_ROOT_NAMESPACE {
 
 		CNI(toupper)
 
-		uwchar_t from_unicode(const numeric& unicode) {
-			if (unicode.as_integer() < 0)
-				throw lang_error("Out of range.");
+		uwchar_t from_char(char c) {
+			return c;
+		}
+
+		CNI(from_char)
+
+		uwchar_t from_unicode(const numeric &unicode) {
+			if (unicode.as_integer() < 0) throw lang_error("Out of range.");
 			return static_cast<uwchar_t>(unicode.as_integer());
 		}
 
@@ -334,7 +345,8 @@ CNI_ROOT_NAMESPACE {
 
 		CNI(erase)
 
-		uwstring_t replace(uwstring_t &str, numeric posit, numeric count, const uwstring_t &val) {
+		uwstring_t replace(uwstring_t &str, numeric posit, numeric count,
+		                   const uwstring_t &val) {
 			str.replace(posit.as_integer(), count.as_integer(), val);
 			return str;
 		}
@@ -372,8 +384,7 @@ CNI_ROOT_NAMESPACE {
 		CNI(rfind)
 
 		uwstring_t cut(uwstring_t &str, numeric n) {
-			for (std::size_t i = 0; i < n.as_integer(); ++i)
-				str.pop_back();
+			for (std::size_t i = 0; i < n.as_integer(); ++i) str.pop_back();
 			return str;
 		}
 
@@ -399,8 +410,7 @@ CNI_ROOT_NAMESPACE {
 
 		uwstring_t tolower(const uwstring_t &str) {
 			uwstring_t s;
-			for (auto &ch:str)
-				s.push_back(std::towlower(ch));
+			for (auto &ch : str) s.push_back(std::towlower(ch));
 			return std::move(s);
 		}
 
@@ -408,8 +418,7 @@ CNI_ROOT_NAMESPACE {
 
 		uwstring_t toupper(const uwstring_t &str) {
 			uwstring_t s;
-			for (auto &ch:str)
-				s.push_back(std::towupper(ch));
+			for (auto &ch : str) s.push_back(std::towupper(ch));
 			return std::move(s);
 		}
 
@@ -422,12 +431,11 @@ CNI_ROOT_NAMESPACE {
 		CNI(to_number)
 
 		array split(const uwstring_t &str, const array &signals) {
-			array
-			arr;
+			array arr;
 			uwstring_t buf;
 			bool found = false;
-			for (auto &ch:str) {
-				for (auto &sig:signals) {
+			for (auto &ch : str) {
+				for (auto &sig : signals) {
 					if (sig.type() == typeid(char) && ch == sig.const_val<char>()) {
 						if (!buf.empty()) {
 							arr.push_back(buf);
@@ -436,7 +444,8 @@ CNI_ROOT_NAMESPACE {
 						found = true;
 						break;
 					}
-					else if (sig.type() == typeid(uwchar_t) && ch == sig.const_val<uwchar_t>()) {
+					else if (sig.type() == typeid(uwchar_t) &&
+					         ch == sig.const_val<uwchar_t>()) {
 						if (!buf.empty()) {
 							arr.push_back(buf);
 							buf.clear();
@@ -450,8 +459,7 @@ CNI_ROOT_NAMESPACE {
 				else
 					buf.push_back(ch);
 			}
-			if (!buf.empty())
-				arr.push_back(buf);
+			if (!buf.empty()) arr.push_back(buf);
 			return std::move(arr);
 		}
 
@@ -460,11 +468,13 @@ CNI_ROOT_NAMESPACE {
 
 	CNI_NAMESPACE(wregex)
 	{
-		wsmatch_t match(wregex_t &reg, const uwstring_t &str) {
+		wsmatch_t match(wregex_t & reg, const uwstring_t &str) {
 			wsmatch_t m;
 			std::regex_search(str, m, reg);
 			return std::move(m);
 		}
+
+		CNI(match)
 
 		wsmatch_t search(wregex_t &reg, const uwstring_t &str) {
 			wsmatch_t m;
@@ -472,9 +482,14 @@ CNI_ROOT_NAMESPACE {
 			return std::move(m);
 		}
 
-		uwstring_t replace(wregex_t &reg, const uwstring_t &str, const uwstring_t &fmt) {
+		CNI(search)
+
+		uwstring_t replace(wregex_t &reg, const uwstring_t &str,
+		                   const uwstring_t &fmt) {
 			return std::regex_replace(str, reg, fmt);
 		}
+
+		CNI(replace)
 	}
 
 	CNI_NAMESPACE(wsmatch)
@@ -483,33 +498,49 @@ CNI_ROOT_NAMESPACE {
 			return m.ready();
 		}
 
+		CNI(ready)
+
 		bool empty(const wsmatch_t &m) {
 			return m.empty();
 		}
+
+		CNI(empty)
 
 		numeric size(const wsmatch_t &m) {
 			return m.size();
 		}
 
+		CNI(size)
+
 		numeric length(const wsmatch_t &m, numeric index) {
 			return m.length(index.as_integer());
 		}
+
+		CNI(length)
 
 		numeric position(const wsmatch_t &m, numeric index) {
 			return m.position(index.as_integer());
 		}
 
+		CNI(position)
+
 		uwstring_t str(const wsmatch_t &m, numeric index) {
 			return m.str(index.as_integer());
 		}
+
+		CNI(str)
 
 		uwstring_t prefix(const wsmatch_t &m) {
 			return m.prefix().str();
 		}
 
+		CNI(prefix)
+
 		uwstring_t suffix(const wsmatch_t &m) {
 			return m.suffix().str();
 		}
+
+		CNI(suffix)
 	}
 
 	cs::var make_wstring()
@@ -517,7 +548,8 @@ CNI_ROOT_NAMESPACE {
 		return cs::var::make<uwstring_t>();
 	}
 
-	CNI_REGISTER(wstring, cs::var::make_constant<cs::type_t>(make_wstring, cs::type_id(typeid(uwstring_t))))
+	CNI_REGISTER(wstring, cs::var::make_constant<cs::type_t>(
+	                 make_wstring, cs::type_id(typeid(uwstring_t))))
 
 	var build_wregex(const uwstring_t &str)
 	{
@@ -527,8 +559,8 @@ CNI_ROOT_NAMESPACE {
 	CNI(build_wregex)
 }
 
-CNI_ENABLE_TYPE_EXT_V(codecvt,      codecvt_t,  "unicode::codecvt")
-CNI_ENABLE_TYPE_EXT_V(wchar,        uwchar_t,   "unicode::wchar")
+CNI_ENABLE_TYPE_EXT_V(codecvt, codecvt_t, "unicode::codecvt")
+CNI_ENABLE_TYPE_EXT_V(wchar, uwchar_t, "unicode::wchar")
 CNI_ENABLE_TYPE_EXT_V(wstring_type, uwstring_t, "unicode::wstring")
-CNI_ENABLE_TYPE_EXT_V(wregex,       wregex_t,   "unicode::wregex")
-CNI_ENABLE_TYPE_EXT_V(wsmatch,      wsmatch_t,  "unicode::wregex::result")
+CNI_ENABLE_TYPE_EXT_V(wregex, wregex_t, "unicode::wregex")
+CNI_ENABLE_TYPE_EXT_V(wsmatch, wsmatch_t, "unicode::wregex::result")
