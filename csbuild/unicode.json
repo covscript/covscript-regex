@@ -3,7 +3,7 @@
     "Name": "unicode",
     "Info": "Unicode Extension",
     "Author": "CovScript Organization",
-    "Version": "1.0.2",
+    "Version": "1.0.3",
     "Target": "build/imports/unicode.cse",
     "Dependencies": []
 }

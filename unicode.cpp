@@ -19,10 +19,9 @@
  * Github:  https://github.com/mikecovlee
  * Website: http://covscript.org.cn
  */
-
-#include <codecvt>
 #include <covscript/cni.hpp>
 #include <covscript/dll.hpp>
+#include <codecvt>
 #include <cwctype>
 #include <regex>
 
@@ -406,7 +405,7 @@ CNI_ROOT_NAMESPACE {
 			return str.size();
 		}
 
-		CNI(size)
+		CNI_VISITOR(size)
 
 		uwstring_t tolower(const uwstring_t &str) {
 			uwstring_t s;
@@ -543,13 +542,13 @@ CNI_ROOT_NAMESPACE {
 		CNI(suffix)
 	}
 
-	cs::var make_wstring()
+	var make_wstring()
 	{
 		return cs::var::make<uwstring_t>();
 	}
 
-	CNI_REGISTER(wstring, cs::var::make_constant<cs::type_t>(
-	                 make_wstring, cs::type_id(typeid(uwstring_t))))
+	CNI_REGISTER(wstring, var::make_constant<cs::type_t>(
+	                 make_wstring, type_id(typeid(uwstring_t))))
 
 	var build_wregex(const uwstring_t &str)
 	{
