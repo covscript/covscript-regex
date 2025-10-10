@@ -556,6 +556,13 @@ CNI_ROOT_NAMESPACE {
 	}
 
 	CNI(build_wregex)
+
+	var build_optimize_wregex(const uwstring_t &str)
+	{
+		return var::make<wregex_t>(str, std::regex_constants::optimize);
+	}
+
+	CNI(build_optimize_wregex)
 }
 
 CNI_ENABLE_TYPE_EXT_V(codecvt, codecvt_t, "unicode::codecvt")

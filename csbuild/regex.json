@@ -3,7 +3,7 @@
     "Name": "regex",
     "Info": "Regex Extension",
     "Author": "CovScript Organization",
-    "Version": "1.0.2",
+    "Version": "1.0.3",
     "Target": "build/imports/regex.cse",
     "Dependencies": []
 }

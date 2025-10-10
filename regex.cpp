@@ -51,13 +51,18 @@ namespace cs_impl {
 	{
 		return "cs::regex::result";
 	}
-}  // namespace cs_impl
+} // namespace cs_impl
 namespace regex_cs_ext {
 	using namespace cs;
 
 	var build(const string &str)
 	{
 		return var::make<std::regex>(str);
+	}
+
+	var build_optimize(const string &str)
+	{
+		return var::make<std::regex>(str, std::regex_constants::optimize);
 	}
 
 	std::smatch match(std::regex &reg, const string &str)
@@ -124,6 +129,7 @@ namespace regex_cs_ext {
 		(*ns)
 		.add_var("result", make_namespace(regex_result_ext))
 		.add_var("build", make_cni(build))
+		.add_var("build_optimize", make_cni(build_optimize))
 		.add_var("match", make_cni(match))
 		.add_var("search", make_cni(search))
 		.add_var("replace", make_cni(replace));
@@ -141,7 +147,7 @@ namespace regex_cs_ext {
 		.add_var("prefix", make_cni(prefix))
 		.add_var("suffix", make_cni(suffix));
 	}
-}  // namespace regex_cs_ext
+} // namespace regex_cs_ext
 
 void cs_extension_main(cs::name_space *ns)
 {
