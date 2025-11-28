@@ -29,7 +29,7 @@ struct pcre2_regex {
 		PCRE2_SIZE erroroffset;
 
 		code = pcre2_compile(
-		           reinterpret_cast<PCRE2_SPTR>(pattern.c_str()),
+		           reinterpret_cast<PCRE2_SPTR>(pattern.data()),
 		           pattern.size(),
 		           PCRE2_UTF | PCRE2_NEWLINE_ANYCRLF,
 		           &errornumber,
@@ -116,12 +116,18 @@ struct pcre2_smatch {
 
 	pcre2_stl_string prefix() const
 	{
-		return input.substr(0, offsets[0].first);
+		if (offsets.empty())
+			return input;
+		else
+			return input.substr(0, offsets[0].first);
 	}
 
 	pcre2_stl_string suffix() const
 	{
-		return input.substr(offsets.back().second);
+		if (offsets.empty())
+			return input;
+		else
+			return input.substr(offsets.back().second);
 	}
 };
 
@@ -133,8 +139,8 @@ pcre2_smatch pcre2_regex_match(pcre2_regex_t &reg, pcre2_stl_string_view input, 
 
 	int rc = pcre2_match(
 	             reg->code,
-	             reinterpret_cast<PCRE2_SPTR>(result.input.c_str()),
-	             input.size(),
+	             reinterpret_cast<PCRE2_SPTR>(result.input.data()),
+	             result.input.size(),
 	             0, // start offset
 	             option,
 	             reg->match_data,
@@ -146,7 +152,7 @@ pcre2_smatch pcre2_regex_match(pcre2_regex_t &reg, pcre2_stl_string_view input, 
 			PCRE2_SIZE start = ovector[2 * i];
 			PCRE2_SIZE end = ovector[2 * i + 1];
 			result.offsets.emplace_back(start, end);
-			result.groups.emplace_back(input.data() + start, end - start);
+			result.groups.emplace_back(result.input.data() + start, end - start);
 		}
 		result.ready = true;
 	}
