@@ -475,7 +475,7 @@ CNI_ROOT_NAMESPACE {
 	CNI_NAMESPACE(wregex)
 	{
 		pcre2_smatch match(pcre2_regex_t & reg, const uwstring_t &str) {
-			return pcre2_regex_match(reg, str);
+			return pcre2_regex_match(reg, str, PCRE2_ANCHORED | PCRE2_ENDANCHORED);
 		}
 
 		CNI(match)

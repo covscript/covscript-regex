@@ -31,7 +31,7 @@ struct pcre2_regex {
 		code = pcre2_compile(
 		           reinterpret_cast<PCRE2_SPTR>(pattern.c_str()),
 		           pattern.size(),
-		           0,
+		           PCRE2_UTF | PCRE2_NEWLINE_ANYCRLF,
 		           &errornumber,
 		           &erroroffset,
 		           nullptr);
@@ -127,7 +127,7 @@ struct pcre2_smatch {
 
 using pcre2_regex_t = std::shared_ptr<pcre2_regex>;
 
-pcre2_smatch pcre2_regex_match(pcre2_regex_t &reg, pcre2_stl_string_view input, uint32_t option = PCRE2_ANCHORED)
+pcre2_smatch pcre2_regex_match(pcre2_regex_t &reg, pcre2_stl_string_view input, uint32_t option)
 {
 	pcre2_smatch result(input);
 

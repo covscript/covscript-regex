@@ -68,7 +68,7 @@ namespace regex_cs_ext {
 
 	pcre2_smatch match(pcre2_regex_t &reg, const string &str)
 	{
-		return pcre2_regex_match(reg, str);
+		return pcre2_regex_match(reg, str, PCRE2_ANCHORED | PCRE2_ENDANCHORED);
 	}
 
 	pcre2_smatch search(pcre2_regex_t &reg, const string &str)
