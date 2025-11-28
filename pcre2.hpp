@@ -20,10 +20,11 @@ struct pcre2_regex {
 	pcre2_stl_string pattern;
 	pcre2_code *code;
 	pcre2_match_data *match_data;
-	pcre2_match_context *match_ctx;
+	// for JIT
+	pcre2_match_context *match_ctx = nullptr;
 	pcre2_jit_stack *jit_stack = nullptr;
 
-	pcre2_regex(pcre2_stl_string_view pattern_v, bool try_jit = false) : pattern(pattern_v)
+	pcre2_regex(const pcre2_stl_string &pattern_v, bool try_jit = false) : pattern(pattern_v)
 	{
 		int errornumber;
 		PCRE2_SIZE erroroffset;
@@ -45,16 +46,9 @@ struct pcre2_regex {
 			throw std::runtime_error("Failed to create match_data");
 		}
 
-		match_ctx = pcre2_match_context_create(nullptr);
-		if (!match_ctx) {
-			pcre2_match_data_free(match_data);
-			pcre2_code_free(code);
-			throw std::runtime_error("Failed to create match_ctx");
-		}
-
 		if (try_jit) {
-			int rc = pcre2_jit_compile(code, PCRE2_JIT_COMPLETE);
-			if (rc == 0) {
+			match_ctx = pcre2_match_context_create(nullptr);
+			if (match_ctx != nullptr && pcre2_jit_compile(code, PCRE2_JIT_COMPLETE) == 0) {
 				jit_stack = pcre2_jit_stack_create(32 * 1024, 512 * 1024, nullptr);
 				pcre2_jit_stack_assign(match_ctx, nullptr, jit_stack);
 			}
@@ -63,8 +57,6 @@ struct pcre2_regex {
 
 	~pcre2_regex()
 	{
-		if (match_ctx && jit_stack)
-			pcre2_jit_stack_assign(match_ctx, nullptr, nullptr);
 		if (jit_stack)
 			pcre2_jit_stack_free(jit_stack);
 		if (match_ctx)
@@ -88,19 +80,23 @@ struct pcre2_smatch {
 
 	pcre2_smatch(pcre2_stl_string_view input_s) : input(input_s) {}
 
-	bool empty() const {
+	bool empty() const
+	{
 		return groups.empty();
 	}
 
-	size_t size() const {
+	size_t size() const
+	{
 		return groups.size();
 	}
 
-	pcre2_stl_string_view str(size_t i) const {
+	pcre2_stl_string_view str(size_t i) const
+	{
 		return groups[i];
 	}
 
-	size_t length(size_t i) const {
+	size_t length(size_t i) const
+	{
 		if (i >= offsets.size())
 			throw std::out_of_range("Invalid group index");
 		auto [start, end] = offsets[i];
@@ -136,23 +132,24 @@ using pcre2_regex_t = std::shared_ptr<pcre2_regex>;
 pcre2_smatch pcre2_regex_match(pcre2_regex_t &reg, pcre2_stl_string_view input, uint32_t option)
 {
 	pcre2_smatch result(input);
+	PCRE2_SPTR input_sptr = reinterpret_cast<PCRE2_SPTR>(input.data());
 
 	int rc = pcre2_match(
 	             reg->code,
-	             reinterpret_cast<PCRE2_SPTR>(result.input.data()),
+	             input_sptr,
 	             result.input.size(),
 	             0, // start offset
 	             option,
 	             reg->match_data,
 	             reg->match_ctx);
 
-	if (rc >= 0) {
+	if (rc > 0) {
 		PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(reg->match_data);
 		for (int i = 0; i < rc; ++i) {
 			PCRE2_SIZE start = ovector[2 * i];
 			PCRE2_SIZE end = ovector[2 * i + 1];
 			result.offsets.emplace_back(start, end);
-			result.groups.emplace_back(result.input.data() + start, end - start);
+			result.groups.emplace_back(reinterpret_cast<const pcre2_stl_string::value_type *>(input_sptr + start), end - start);
 		}
 		result.ready = true;
 	}
