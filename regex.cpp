@@ -21,107 +21,104 @@
  */
 #include <covscript/cni.hpp>
 #include <covscript/dll.hpp>
-#include <regex>
+
+#include "pcre2.hpp"
 
 static cs::namespace_t regex_ext = cs::make_shared_namespace<cs::name_space>();
-static cs::namespace_t regex_result_ext =
-    cs::make_shared_namespace<cs::name_space>();
+static cs::namespace_t regex_result_ext = cs::make_shared_namespace<cs::name_space>();
 
 namespace cs_impl {
 	template <>
-	cs::namespace_t &get_ext<std::regex>()
+	cs::namespace_t &get_ext<pcre2_regex_t>()
 	{
 		return regex_ext;
 	}
 
 	template <>
-	cs::namespace_t &get_ext<std::smatch>()
+	cs::namespace_t &get_ext<pcre2_smatch>()
 	{
 		return regex_result_ext;
 	}
 
 	template <>
-	constexpr const char *get_name_of_type<std::regex>()
+	constexpr const char *get_name_of_type<pcre2_regex_t>()
 	{
 		return "cs::regex";
 	}
 
 	template <>
-	constexpr const char *get_name_of_type<std::smatch>()
+	constexpr const char *get_name_of_type<pcre2_smatch>()
 	{
 		return "cs::regex::result";
 	}
 } // namespace cs_impl
+
 namespace regex_cs_ext {
 	using namespace cs;
 
-	var build(const string &str)
+	pcre2_regex_t build(const string &str)
 	{
-		return var::make<std::regex>(str);
+		return std::make_shared<pcre2_regex>(str, false);
 	}
 
-	var build_optimize(const string &str)
+	pcre2_regex_t build_optimize(const string &str)
 	{
-		return var::make<std::regex>(str, std::regex_constants::optimize);
+		return std::make_shared<pcre2_regex>(str, true);
 	}
 
-	std::smatch match(std::regex &reg, const string &str)
+	pcre2_smatch match(pcre2_regex_t &reg, const string &str)
 	{
-		std::smatch m;
-		std::regex_search(str, m, reg);
-		return std::move(m);
+		return pcre2_regex_match(reg, str, PCRE2_ANCHORED | PCRE2_ENDANCHORED);
 	}
 
-	std::smatch search(std::regex &reg, const string &str)
+	pcre2_smatch search(pcre2_regex_t &reg, const string &str)
 	{
-		std::smatch m;
-		std::regex_search(str, m, reg);
-		return std::move(m);
+		return pcre2_regex_match(reg, str, 0);
 	}
 
-	string replace(std::regex &reg, const string &str, const string &fmt)
+	string replace(pcre2_regex_t &reg, const string &str, const string &fmt)
 	{
-		return std::regex_replace(str, reg, fmt);
+		return pcre2_regex_replace(reg, str, fmt);
 	}
 
-	bool ready(const std::smatch &m)
+	bool ready(const pcre2_smatch &m)
 	{
-		return m.ready();
+		return m.ready;
 	}
 
-	bool empty(const std::smatch &m)
+	bool empty(const pcre2_smatch &m)
 	{
 		return m.empty();
 	}
 
-	numeric size(const std::smatch &m)
+	numeric size(const pcre2_smatch &m)
 	{
 		return m.size();
 	}
 
-	numeric length(const std::smatch &m, numeric index)
+	numeric length(const pcre2_smatch &m, numeric index)
 	{
-		return m.length(index.as_integer());
+		return m.str(index.as_integer()).size();
 	}
 
-	numeric position(const std::smatch &m, numeric index)
+	numeric position(const pcre2_smatch &m, numeric index)
 	{
 		return m.position(index.as_integer());
 	}
 
-	string str(const std::smatch &m, numeric index)
+	string str(const pcre2_smatch &m, numeric index)
 	{
-		return m.str(index.as_integer());
+		return string(m.str(index.as_integer()));
 	}
 
-	string prefix(const std::smatch &m)
+	string prefix(const pcre2_smatch &m)
 	{
-		return m.prefix().str();
+		return m.prefix();
 	}
 
-	string suffix(const std::smatch &m)
+	string suffix(const pcre2_smatch &m)
 	{
-		return m.suffix().str();
+		return m.suffix();
 	}
 
 	void init(name_space *ns)
