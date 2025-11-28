@@ -23,10 +23,15 @@
 #include <covscript/dll.hpp>
 #include <codecvt>
 #include <cwctype>
-#include <regex>
 
-using uwstring_t = std::u32string;
 using uwchar_t = char32_t;
+using uwstring_t = std::u32string;
+
+#define PCRE2_CODE_UNIT_WIDTH 32
+#define pcre2_stl_string std::u32string
+#define pcre2_stl_string_view std::u32string_view
+
+#include "pcre2.hpp"
 
 namespace codecvt_impl {
 #if COVSCRIPT_ABI_VERSION < 251108
@@ -158,11 +163,9 @@ namespace codecvt_impl {
 #else
 	using namespace cs::codecvt;
 #endif
-}  // namespace codecvt_impl
+} // namespace codecvt_impl
 
 using codecvt_t = std::shared_ptr<codecvt_impl::charset>;
-using wregex_t = std::basic_regex<uwchar_t>;
-using wsmatch_t = std::match_results<std::u32string::const_iterator>;
 
 CNI_ROOT_NAMESPACE {
 	using namespace cs;
@@ -471,25 +474,21 @@ CNI_ROOT_NAMESPACE {
 
 	CNI_NAMESPACE(wregex)
 	{
-		wsmatch_t match(wregex_t & reg, const uwstring_t &str) {
-			wsmatch_t m;
-			std::regex_search(str, m, reg);
-			return std::move(m);
+		pcre2_smatch match(pcre2_regex_t & reg, const uwstring_t &str) {
+			return pcre2_regex_match(reg, str);
 		}
 
 		CNI(match)
 
-		wsmatch_t search(wregex_t &reg, const uwstring_t &str) {
-			wsmatch_t m;
-			std::regex_search(str, m, reg);
-			return std::move(m);
+		pcre2_smatch search(pcre2_regex_t &reg, const uwstring_t &str) {
+			return pcre2_regex_match(reg, str, 0);
 		}
 
 		CNI(search)
 
-		uwstring_t replace(wregex_t &reg, const uwstring_t &str,
+		uwstring_t replace(pcre2_regex_t &reg, const uwstring_t &str,
 		                   const uwstring_t &fmt) {
-			return std::regex_replace(str, reg, fmt);
+			return pcre2_regex_replace(reg, str, fmt);
 		}
 
 		CNI(replace)
@@ -497,50 +496,50 @@ CNI_ROOT_NAMESPACE {
 
 	CNI_NAMESPACE(wsmatch)
 	{
-		bool ready(const wsmatch_t &m) {
-			return m.ready();
+		bool ready(const pcre2_smatch &m) {
+			return m.ready;
 		}
 
 		CNI(ready)
 
-		bool empty(const wsmatch_t &m) {
+		bool empty(const pcre2_smatch &m) {
 			return m.empty();
 		}
 
 		CNI(empty)
 
-		numeric size(const wsmatch_t &m) {
+		numeric size(const pcre2_smatch &m) {
 			return m.size();
 		}
 
 		CNI(size)
 
-		numeric length(const wsmatch_t &m, numeric index) {
+		numeric length(const pcre2_smatch &m, numeric index) {
 			return m.length(index.as_integer());
 		}
 
 		CNI(length)
 
-		numeric position(const wsmatch_t &m, numeric index) {
+		numeric position(const pcre2_smatch &m, numeric index) {
 			return m.position(index.as_integer());
 		}
 
 		CNI(position)
 
-		uwstring_t str(const wsmatch_t &m, numeric index) {
-			return m.str(index.as_integer());
+		uwstring_t str(const pcre2_smatch &m, numeric index) {
+			return uwstring_t(m.str(index.as_integer()));
 		}
 
 		CNI(str)
 
-		uwstring_t prefix(const wsmatch_t &m) {
-			return m.prefix().str();
+		uwstring_t prefix(const pcre2_smatch &m) {
+			return m.prefix();
 		}
 
 		CNI(prefix)
 
-		uwstring_t suffix(const wsmatch_t &m) {
-			return m.suffix().str();
+		uwstring_t suffix(const pcre2_smatch &m) {
+			return m.suffix();
 		}
 
 		CNI(suffix)
@@ -554,16 +553,16 @@ CNI_ROOT_NAMESPACE {
 	CNI_REGISTER(wstring, var::make_constant<cs::type_t>(
 	                 make_wstring, type_id(typeid(uwstring_t))))
 
-	var build_wregex(const uwstring_t &str)
+	pcre2_regex_t build_wregex(const uwstring_t &str)
 	{
-		return var::make<wregex_t>(str);
+		return std::make_shared<pcre2_regex>(str, false);
 	}
 
 	CNI(build_wregex)
 
-	var build_optimize_wregex(const uwstring_t &str)
+	pcre2_regex_t build_optimize_wregex(const uwstring_t &str)
 	{
-		return var::make<wregex_t>(str, std::regex_constants::optimize);
+		return std::make_shared<pcre2_regex>(str, true);
 	}
 
 	CNI(build_optimize_wregex)
@@ -572,5 +571,5 @@ CNI_ROOT_NAMESPACE {
 CNI_ENABLE_TYPE_EXT_V(codecvt, codecvt_t, "unicode::codecvt")
 CNI_ENABLE_TYPE_EXT_V(wchar, uwchar_t, "unicode::wchar")
 CNI_ENABLE_TYPE_EXT_V(wstring_type, uwstring_t, "unicode::wstring")
-CNI_ENABLE_TYPE_EXT_V(wregex, wregex_t, "unicode::wregex")
-CNI_ENABLE_TYPE_EXT_V(wsmatch, wsmatch_t, "unicode::wregex::result")
+CNI_ENABLE_TYPE_EXT_V(wregex, pcre2_regex_t, "unicode::wregex")
+CNI_ENABLE_TYPE_EXT_V(wsmatch, pcre2_smatch, "unicode::wregex::result")
