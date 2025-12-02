@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -5,6 +6,10 @@
 #ifndef PCRE2_CODE_UNIT_WIDTH
 #define PCRE2_CODE_UNIT_WIDTH 8
 #endif
+
+#define PCRE2_NAME_CONCAT_IMPL(a, b) a##_##b
+#define PCRE2_NAME_CONCAT(a, b) PCRE2_NAME_CONCAT_IMPL(a, b)
+#define PCRE2_RENAME(a) PCRE2_NAME_CONCAT(a, PCRE2_CODE_UNIT_WIDTH)
 
 #ifndef pcre2_stl_string
 #define pcre2_stl_string std::string
@@ -15,6 +20,8 @@
 #endif
 
 #include <pcre2.h>
+
+#define pcre2_regex PCRE2_RENAME(pcre2_regex)
 
 struct pcre2_regex {
 	pcre2_stl_string pattern;
@@ -71,6 +78,8 @@ struct pcre2_regex {
 	pcre2_regex(pcre2_regex &&other) noexcept = delete;
 	pcre2_regex &operator=(const pcre2_regex &) = delete;
 };
+
+#define pcre2_smatch PCRE2_RENAME(pcre2_smatch)
 
 struct pcre2_smatch {
 	bool ready = false;
@@ -129,6 +138,8 @@ struct pcre2_smatch {
 
 using pcre2_regex_t = std::shared_ptr<pcre2_regex>;
 
+#define pcre2_regex_match PCRE2_RENAME(pcre2_regex_match)
+
 pcre2_smatch pcre2_regex_match(pcre2_regex_t &reg, pcre2_stl_string_view input, uint32_t option)
 {
 	pcre2_smatch result(input);
@@ -156,6 +167,8 @@ pcre2_smatch pcre2_regex_match(pcre2_regex_t &reg, pcre2_stl_string_view input, 
 
 	return result;
 }
+
+#define pcre2_regex_replace PCRE2_RENAME(pcre2_regex_replace)
 
 pcre2_stl_string pcre2_regex_replace(pcre2_regex_t &reg, pcre2_stl_string_view input, pcre2_stl_string_view fmt)
 {
